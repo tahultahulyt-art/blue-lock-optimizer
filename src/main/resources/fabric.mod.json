@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "bluelockoptimizer",
+  "version": "${version}",
+  "name": "Blue Lock Optimizer",
+  "description": "All-in-one client mod: live FPS counter, PvP HUD (CPS + ping + attack-cooldown bar), and a one-key Performance Mode.",
+  "authors": ["rahul_the_og"],
+  "contact": {},
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["com.rahultheog.bluelockoptimizer.BlueLockOptimizerClient"]
+  },
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "fabric-api": "*",
+    "minecraft": "~1.20.1",
+    "java": ">=17"
+  }
+}
