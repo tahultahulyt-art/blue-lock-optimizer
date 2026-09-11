@@ -4,9 +4,10 @@
   "version": "${version}",
   "name": "Blue Lock Optimizer",
   "description": "All-in-one client mod: live FPS counter, PvP HUD (CPS + ping + attack-cooldown bar), and a one-key Performance Mode.",
-  "authors": ["rahul_the_og"],
+  "authors": ["okarun"],
   "contact": {},
   "license": "MIT",
+  "icon": "icon.png",
   "environment": "client",
   "entrypoints": {
     "client": ["com.rahultheog.bluelockoptimizer.BlueLockOptimizerClient"]
