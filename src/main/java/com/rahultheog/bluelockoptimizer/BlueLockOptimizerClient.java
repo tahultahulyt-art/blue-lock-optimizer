@@ -29,7 +29,6 @@ public class BlueLockOptimizerClient implements ClientModInitializer {
 
     private static int fps = 0;
     private static int cps = 0;
-    private static int cpsClickCount = 0;
     private static long cpsWindowStart = System.currentTimeMillis();
     private static boolean wasRightDown = false;
     private static boolean wasF3Down = false;
@@ -92,17 +91,20 @@ public class BlueLockOptimizerClient implements ClientModInitializer {
             perfMgr.tick(mc);
             updateCps(mc);
 
+            // ── SHIFT + RIGHT CLICK → Mod Menu ──
             boolean rightNow = InputUtil.isKeyPressed(
                 mc.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_RIGHT);
+            boolean shiftNow = InputUtil.isKeyPressed(
+                mc.getWindow().getHandle(), GLFW.GLFW_KEY_LEFT_SHIFT) ||
+                InputUtil.isKeyPressed(
+                mc.getWindow().getHandle(), GLFW.GLFW_KEY_RIGHT_SHIFT);
 
-            boolean menuContext = (mc.crosshairTarget == null ||
-                mc.crosshairTarget.getType().name().equals("MISS"));
-
-            if (rightNow && !wasRightDown && menuContext && mc.currentScreen == null) {
+            if (rightNow && shiftNow && !wasRightDown && mc.currentScreen == null) {
                 mc.setScreen(new ModMenuScreen());
             }
             wasRightDown = rightNow;
 
+            // ── F3 → Performance Mode ──
             boolean f3Now = InputUtil.isKeyPressed(
                 mc.getWindow().getHandle(), GLFW.GLFW_KEY_F3);
             if (f3Now && !wasF3Down) {
@@ -118,8 +120,7 @@ public class BlueLockOptimizerClient implements ClientModInitializer {
     private void updateCps(MinecraftClient mc) {
         long now = System.currentTimeMillis();
         if (now - cpsWindowStart >= 1000) {
-            cps = cpsClickCount;
-            cpsClickCount = 0;
+            cps = 0;
             cpsWindowStart = now;
         }
     }
