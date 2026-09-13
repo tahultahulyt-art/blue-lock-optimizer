@@ -8,6 +8,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ModMenuScreen extends Screen {
+private long menuOpenTime;
+private float openAnimation = 0.0f;
+
+private static final int ANIMATION_DURATION = 220;    
 
     private int panelX;
     private int panelY;
