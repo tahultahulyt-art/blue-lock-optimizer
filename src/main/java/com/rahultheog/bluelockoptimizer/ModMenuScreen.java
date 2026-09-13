@@ -97,7 +97,14 @@ menuOpenTime = System.currentTimeMillis();
             int mouseY,
             float delta
     ) {
+long elapsed = System.currentTimeMillis() - menuOpenTime;
 
+openAnimation = Math.min(
+        1.0f,
+        elapsed / (float) ANIMATION_DURATION
+);
+
+openAnimation = 1.0f - (float) Math.pow(1.0f - openAnimation, 3);
         // =====================================================
         // BACKGROUND
         // =====================================================
