@@ -114,7 +114,7 @@ int alpha = (int) (184 * openAnimation);
                 0,
                 width,
                 height,
-                0xB8050B16
+                (alpha << 24) | 0x050B16
         );
 
         // Blue ambient glow
