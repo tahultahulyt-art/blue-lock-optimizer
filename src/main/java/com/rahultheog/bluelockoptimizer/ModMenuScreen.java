@@ -108,7 +108,7 @@ openAnimation = 1.0f - (float) Math.pow(1.0f - openAnimation, 3);
         // =====================================================
         // BACKGROUND
         // =====================================================
-
+int alpha = (int) (184 * openAnimation);
         context.fill(
                 0,
                 0,
