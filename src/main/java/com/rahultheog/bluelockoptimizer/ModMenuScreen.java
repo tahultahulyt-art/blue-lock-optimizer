@@ -24,7 +24,7 @@ private static final int ANIMATION_DURATION = 220;
 
     public ModMenuScreen() {
         super(Text.literal("BlueLock Optimizer"));
-
+menuOpenTime = System.currentTimeMillis();
         modules.add(new ModuleButton(
                 "Armor HUD",
                 "Shows your armor status on screen.",
