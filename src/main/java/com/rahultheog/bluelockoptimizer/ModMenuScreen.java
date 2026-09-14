@@ -129,7 +129,7 @@ int alpha = (int) (184 * openAnimation);
         // =====================================================
         // MAIN PANEL
         // =====================================================
-
+panelY += (int) ((1.0f - openAnimation) * 20);
         drawPanel(
                 context,
                 panelX,
