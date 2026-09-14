@@ -3,7 +3,6 @@ package com.rahultheog.bluelockoptimizer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,27 +10,30 @@ import java.util.List;
 public class ModMenuScreen extends Screen {
 
     // =========================================================
-    // BLUECORE COLORS
+    // BLUECORE / BLUELOCK THEME
     // =========================================================
 
-    private static final int BACKGROUND = 0xFF050A12;
+    private static final int BG = 0xFF030811;
     private static final int PANEL = 0xF20A1422;
-    private static final int PANEL_DARK = 0xFF0B1725;
-    private static final int CARD = 0xFF0D1B2B;
+    private static final int PANEL_INNER = 0xE80C1928;
+
+    private static final int CARD = 0xE60D1C2C;
+    private static final int CARD_HOVER = 0xF0183047;
 
     private static final int BLUE = 0xFF087FFF;
     private static final int LIGHT_BLUE = 0xFF38C6FF;
+    private static final int CYAN = 0xFF69D6FF;
 
-    private static final int WHITE = 0xFFEAF6FF;
-    private static final int TEXT = 0xFFB9D4EA;
-    private static final int MUTED = 0xFF6F91AC;
+    private static final int WHITE = 0xFFF0F8FF;
+    private static final int TEXT = 0xFFB7D0E5;
+    private static final int MUTED = 0xFF66839B;
 
     // =========================================================
-    // BLAZE-STYLE MENU SIZE
+    // PREMIUM MENU SIZE
     // =========================================================
 
-    private static final int TARGET_WIDTH = 900;
-    private static final int TARGET_HEIGHT = 500;
+    private static final int MENU_WIDTH = 900;
+    private static final int MENU_HEIGHT = 500;
 
     // =========================================================
     // PANEL
@@ -45,19 +47,15 @@ public class ModMenuScreen extends Screen {
     private int selectedTab = 0;
 
     // =========================================================
-    // ANIMATION
+    // OPEN ANIMATION
     // =========================================================
 
     private long menuOpenTime;
 
-    private float openAnimation = 0.0f;
-    private float logoPulse = 0.0f;
+    private float openProgress = 0.0f;
+    private float logoRotation = 0.0f;
 
-    /*
-     * Blaze uses a smooth sine based opening animation.
-     * We use the same idea here.
-     */
-    private static final int ANIMATION_DURATION = 750;
+    private static final int OPEN_DURATION = 750;
 
     // =========================================================
     // MODULES
@@ -77,61 +75,57 @@ public class ModMenuScreen extends Screen {
         menuOpenTime =
                 System.currentTimeMillis();
 
-        // -----------------------------------------------------
-        // EXISTING BLUELOCK MODULES
-        // -----------------------------------------------------
-
         modules.add(new ModuleButton(
                 "Armor HUD",
-                "Display your armor status.",
+                "Shows your armor status on screen.",
                 0
         ));
 
         modules.add(new ModuleButton(
                 "Full Bright",
-                "Increase world brightness.",
+                "Removes darkness and improves visibility.",
                 1
         ));
 
         modules.add(new ModuleButton(
                 "Coordinates",
-                "Show XYZ coordinates.",
+                "Displays your current coordinates.",
                 2
         ));
 
         modules.add(new ModuleButton(
                 "CPS Counter",
-                "Show clicks per second.",
+                "Shows your clicks per second.",
                 3
         ));
 
         modules.add(new ModuleButton(
                 "Potion Counter",
-                "Show active potion effects.",
+                "Shows active potion effects and time.",
                 4
         ));
 
         modules.add(new ModuleButton(
                 "Keystrokes",
-                "Display movement keys.",
+                "Shows your key presses in real time.",
                 5
         ));
 
         modules.add(new ModuleButton(
                 "FPS",
-                "Display current FPS.",
+                "Displays your current frames per second.",
                 6
         ));
 
         modules.add(new ModuleButton(
                 "Zoom",
-                "Zoom your Minecraft view.",
+                "Allows you to zoom your Minecraft view.",
                 7
         ));
 
         modules.add(new ModuleButton(
                 "Toggle Sprint",
-                "Automatically sprint.",
+                "Automatically toggles sprint.",
                 8
         ));
     }
@@ -145,13 +139,13 @@ public class ModMenuScreen extends Screen {
 
         panelW =
                 Math.min(
-                        TARGET_WIDTH,
+                        MENU_WIDTH,
                         width - 40
                 );
 
         panelH =
                 Math.min(
-                        TARGET_HEIGHT,
+                        MENU_HEIGHT,
                         height - 40
                 );
 
@@ -175,43 +169,35 @@ public class ModMenuScreen extends Screen {
     ) {
 
         // -----------------------------------------------------
-        // ANIMATION PROGRESS
+        // OPEN ANIMATION
         // -----------------------------------------------------
 
         long elapsed =
                 System.currentTimeMillis()
                         - menuOpenTime;
 
-        float progress =
+        float raw =
                 Math.min(
                         1.0f,
                         elapsed /
-                                (float) ANIMATION_DURATION
+                                (float) OPEN_DURATION
                 );
 
-        /*
-         * Smooth sine easing.
-         *
-         * 0 -> 1
-         *
-         * Starts slowly,
-         * becomes smooth,
-         * finishes softly.
-         */
-        openAnimation =
-                (float)
-                        Math.sin(
-                                progress *
-                                        Math.PI /
-                                        2.0
-                        );
+        // Smooth cubic ease-out
+        openProgress =
+                1.0f -
+                        (float)
+                                Math.pow(
+                                        1.0f - raw,
+                                        3.0
+                                );
 
         // -----------------------------------------------------
         // LOGO ANIMATION
         // -----------------------------------------------------
 
-        logoPulse +=
-                delta * 0.08f;
+        logoRotation +=
+                delta * 0.025f;
 
         // -----------------------------------------------------
         // BACKGROUND
@@ -222,70 +208,40 @@ public class ModMenuScreen extends Screen {
                 0,
                 width,
                 height,
-                BACKGROUND
+                BG
+        );
+
+        // Large subtle blue atmosphere
+        drawGlow(
+                context,
+                panelX - 18,
+                panelY - 18,
+                panelW + 36,
+                panelH + 36,
+                0x22008CFF
         );
 
         // -----------------------------------------------------
-        // ANIMATED SIZE
+        // ANIMATED PANEL POSITION
         // -----------------------------------------------------
-
-        /*
-         * The menu starts slightly smaller and grows
-         * smoothly to 900x500.
-         */
-        float scale =
-                0.92f +
-                        0.08f *
-                                openAnimation;
-
-        int animatedW =
-                (int)
-                        (panelW * scale);
-
-        int animatedH =
-                (int)
-                        (panelH * scale);
-
-        int animatedX =
-                panelX +
-                        (panelW - animatedW) / 2;
 
         int animatedY =
                 panelY +
-                        (panelH - animatedH) / 2;
+                        (int)
+                                ((1.0f -
+                                        openProgress) *
+                                        18);
 
         // -----------------------------------------------------
-        // SLIGHT UPWARD MOTION
+        // PANEL
         // -----------------------------------------------------
 
-        animatedY +=
-                (int)
-                        ((1.0f -
-                                openAnimation) *
-                                12);
-
-        // -----------------------------------------------------
-        // BLUE AMBIENT GLOW
-        // -----------------------------------------------------
-
-        context.fill(
-                animatedX - 7,
-                animatedY - 7,
-                animatedX + animatedW + 7,
-                animatedY + animatedH + 7,
-                0x55008CFF
-        );
-
-        // -----------------------------------------------------
-        // MAIN PANEL
-        // -----------------------------------------------------
-
-        drawPanel(
+        drawPremiumPanel(
                 context,
-                animatedX,
+                panelX,
                 animatedY,
-                animatedW,
-                animatedH
+                panelW,
+                panelH
         );
 
         // -----------------------------------------------------
@@ -294,9 +250,11 @@ public class ModMenuScreen extends Screen {
 
         drawHeader(
                 context,
-                animatedX,
+                panelX,
                 animatedY,
-                animatedW
+                panelW,
+                mouseX,
+                mouseY
         );
 
         // -----------------------------------------------------
@@ -305,7 +263,7 @@ public class ModMenuScreen extends Screen {
 
         drawSidebar(
                 context,
-                animatedX,
+                panelX,
                 animatedY,
                 mouseX,
                 mouseY
@@ -319,9 +277,8 @@ public class ModMenuScreen extends Screen {
 
             drawModules(
                     context,
-                    animatedX,
+                    panelX,
                     animatedY,
-                    animatedW,
                     mouseX,
                     mouseY
             );
@@ -330,34 +287,29 @@ public class ModMenuScreen extends Screen {
 
             drawHUD(
                     context,
-                    animatedX,
+                    panelX,
                     animatedY,
-                    animatedW
+                    mouseX,
+                    mouseY
             );
 
         } else {
 
             drawSettings(
                     context,
-                    animatedX,
+                    panelX,
                     animatedY,
-                    animatedW
+                    mouseX,
+                    mouseY
             );
         }
-
-        super.render(
-                context,
-                mouseX,
-                mouseY,
-                delta
-        );
     }
 
     // =========================================================
-    // PANEL
+    // PREMIUM PANEL
     // =========================================================
 
-    private void drawPanel(
+    private void drawPremiumPanel(
             DrawContext context,
             int x,
             int y,
@@ -365,46 +317,55 @@ public class ModMenuScreen extends Screen {
             int h
     ) {
 
-        context.fill(
+        // Outer glow
+        drawRoundedRect(
+                context,
+                x - 2,
+                y - 2,
+                w + 4,
+                h + 4,
+                10,
+                0x42007FFF
+        );
+
+        // Outer panel
+        drawRoundedRect(
+                context,
                 x,
                 y,
-                x + w,
-                y + h,
+                w,
+                h,
+                8,
                 PANEL
         );
 
-        // Top blue line
-        context.fill(
-                x,
+        // Inner panel
+        drawRoundedRect(
+                context,
+                x + 1,
+                y + 1,
+                w - 2,
+                h - 2,
+                7,
+                PANEL_INNER
+        );
+
+        // Top neon line
+        drawRoundedRect(
+                context,
+                x + 8,
                 y,
-                x + w,
-                y + 2,
+                w - 16,
+                2,
+                1,
                 BLUE
         );
 
-        // Bottom border
+        // Bottom subtle line
         context.fill(
-                x,
+                x + 15,
                 y + h - 1,
-                x + w,
-                y + h,
-                0xFF12304A
-        );
-
-        // Left border
-        context.fill(
-                x,
-                y,
-                x + 1,
-                y + h,
-                0xFF12304A
-        );
-
-        // Right border
-        context.fill(
-                x + w - 1,
-                y,
-                x + w,
+                x + w - 15,
                 y + h,
                 0xFF12304A
         );
@@ -418,20 +379,46 @@ public class ModMenuScreen extends Screen {
             DrawContext context,
             int x,
             int y,
-            int w
+            int w,
+            int mouseX,
+            int mouseY
     ) {
 
-        drawLogo(
+        // Logo background
+        drawRoundedRect(
                 context,
-                x + 25,
-                y + 17
+                x + 18,
+                y + 14,
+                52,
+                52,
+                10,
+                0xFF0A2035
         );
 
+        // Blue logo glow
+        drawRoundedRect(
+                context,
+                x + 21,
+                y + 17,
+                46,
+                46,
+                9,
+                0x33008CFF
+        );
+
+        // Football logo
+        drawFootballLogo(
+                context,
+                x + 44,
+                y + 40
+        );
+
+        // Brand
         context.drawText(
                 textRenderer,
-                Text.literal("BLUECORE"),
-                x + 70,
-                y + 23,
+                Text.literal("BLUELOCK"),
+                x + 83,
+                y + 24,
                 WHITE,
                 true
         );
@@ -439,104 +426,146 @@ public class ModMenuScreen extends Screen {
         context.drawText(
                 textRenderer,
                 Text.literal("OPTIMIZER"),
-                x + 70,
-                y + 39,
-                BLUE,
+                x + 83,
+                y + 40,
+                LIGHT_BLUE,
                 false
         );
 
-        context.fill(
-                x + 20,
-                y + 70,
-                x + w - 20,
-                y + 71,
-                0xFF12304A
-        );
-
-        drawSearchIcon(
+        // Small status
+        drawRoundedRect(
                 context,
-                x + w - 78,
-                y + 25
+                x + 83,
+                y + 55,
+                7,
+                7,
+                3,
+                0xFF2DFFB2
         );
 
         context.drawText(
                 textRenderer,
-                Text.literal("⚙"),
-                x + w - 45,
-                y + 22,
-                LIGHT_BLUE,
-                true
+                Text.literal("ONLINE"),
+                x + 96,
+                y + 53,
+                MUTED,
+                false
+        );
+
+        // Header separator
+        context.fill(
+                x + 18,
+                y + 78,
+                x + w - 18,
+                y + 79,
+                0xFF102B41
+        );
+
+        // Search
+        drawSearchButton(
+                context,
+                x + w - 76,
+                y + 25,
+                mouseX,
+                mouseY
+        );
+
+        // Settings
+        drawGearButton(
+                context,
+                x + w - 39,
+                y + 25,
+                mouseX,
+                mouseY
         );
     }
 
     // =========================================================
-    // ANIMATED LOGO
+    // FOOTBALL LOGO
     // =========================================================
 
-    private void drawLogo(
+    private void drawFootballLogo(
             DrawContext context,
-            int x,
-            int y
+            int cx,
+            int cy
     ) {
 
-        float pulse =
-                (float)
-                        Math.sin(
-                                logoPulse
-                        );
-
-        int alpha =
-                40 +
-                        (int)
-                                ((pulse + 1.0f)
-                                        * 18);
-
-        int glow =
-                (alpha << 24)
-                        | 0x087FFF;
-
-        // Glow
-        context.fill(
-                x - 6,
-                y - 6,
-                x + 39,
-                y + 44,
-                glow
+        // Outer glow
+        drawRoundedRect(
+                context,
+                cx - 17,
+                cy - 17,
+                34,
+                34,
+                17,
+                0x30008CFF
         );
 
-        // Main shape
+        // Pixel-style football silhouette
         context.fill(
-                x + 8,
-                y,
-                x + 25,
-                y + 38,
-                BLUE
+                cx - 8,
+                cy - 14,
+                cx + 8,
+                cy + 14,
+                LIGHT_BLUE
         );
 
         context.fill(
-                x,
-                y + 8,
-                x + 33,
-                y + 30,
-                BLUE
+                cx - 14,
+                cy - 8,
+                cx + 14,
+                cy + 8,
+                LIGHT_BLUE
         );
 
-        // Center cut
         context.fill(
-                x + 8,
-                y + 8,
-                x + 25,
-                y + 30,
+                cx - 10,
+                cy - 11,
+                cx + 10,
+                cy + 11,
+                LIGHT_BLUE
+        );
+
+        // Dark center pattern
+        context.fill(
+                cx - 4,
+                cy - 5,
+                cx + 5,
+                cy + 5,
                 0xFF07182B
         );
 
-        // Bright center
+        // Football seams
         context.fill(
-                x + 13,
-                y + 4,
-                x + 20,
-                y + 34,
-                LIGHT_BLUE
+                cx - 1,
+                cy - 11,
+                cx + 2,
+                cy - 5,
+                BLUE
+        );
+
+        context.fill(
+                cx - 1,
+                cy + 5,
+                cx + 2,
+                cy + 11,
+                BLUE
+        );
+
+        context.fill(
+                cx - 11,
+                cy - 1,
+                cx - 4,
+                cy + 2,
+                BLUE
+        );
+
+        context.fill(
+                cx + 4,
+                cy - 1,
+                cx + 11,
+                cy + 2,
+                BLUE
         );
     }
 
@@ -553,43 +582,52 @@ public class ModMenuScreen extends Screen {
     ) {
 
         int sidebarX =
-                x + 20;
+                x + 18;
 
         int sidebarY =
-                y + 95;
+                y + 96;
 
-        drawTab(
+        drawSidebarItem(
                 context,
                 sidebarX,
                 sidebarY,
-                "Modules",
+                "MODULES",
                 0,
                 mouseX,
                 mouseY
         );
 
-        drawTab(
+        drawSidebarItem(
                 context,
                 sidebarX,
-                sidebarY + 55,
+                sidebarY + 54,
                 "HUD",
                 1,
                 mouseX,
                 mouseY
         );
 
-        drawTab(
+        drawSidebarItem(
                 context,
                 sidebarX,
-                sidebarY + 110,
-                "Settings",
+                sidebarY + 108,
+                "SETTINGS",
                 2,
                 mouseX,
                 mouseY
         );
+
+        // Sidebar divider
+        context.fill(
+                x + 177,
+                y + 96,
+                x + 178,
+                y + panelH - 18,
+                0xFF102A40
+        );
     }
 
-    private void drawTab(
+    private void drawSidebarItem(
             DrawContext context,
             int x,
             int y,
@@ -604,43 +642,49 @@ public class ModMenuScreen extends Screen {
 
         boolean hover =
                 mouseX >= x &&
-                        mouseX <= x + 150 &&
+                        mouseX <= x + 145 &&
                         mouseY >= y &&
-                        mouseY <= y + 40;
+                        mouseY <= y + 38;
 
         if (selected) {
 
-            context.fill(
+            drawRoundedRect(
+                    context,
                     x,
                     y,
-                    x + 150,
-                    y + 40,
+                    145,
+                    38,
+                    7,
                     0xFF102C45
             );
 
-            context.fill(
+            drawRoundedRect(
+                    context,
                     x,
-                    y,
-                    x + 3,
-                    y + 40,
+                    y + 5,
+                    3,
+                    28,
+                    2,
                     BLUE
             );
 
         } else if (hover) {
 
-            context.fill(
+            drawRoundedRect(
+                    context,
                     x,
                     y,
-                    x + 150,
-                    y + 40,
-                    0xFF0C2032
+                    145,
+                    38,
+                    7,
+                    0xFF0D2236
             );
         }
 
         context.drawText(
                 textRenderer,
                 Text.literal(name),
-                x + 15,
+                x + 16,
                 y + 14,
                 selected
                         ? LIGHT_BLUE
@@ -657,22 +701,18 @@ public class ModMenuScreen extends Screen {
             DrawContext context,
             int x,
             int y,
-            int w,
             int mouseX,
             int mouseY
     ) {
 
         int startX =
-                x + 190;
+                x + 194;
 
         int startY =
-                y + 95;
+                y + 96;
 
-        int cardW =
-                215;
-
-        int cardH =
-                125;
+        int cardW = 215;
+        int cardH = 116;
 
         for (int i = 0;
              i < modules.size();
@@ -695,17 +735,36 @@ public class ModMenuScreen extends Screen {
             int cardY =
                     startY +
                             row *
-                                    (cardH + 12);
+                                    (cardH + 10);
+
+            // Staggered entrance
+            float cardProgress =
+                    Math.max(
+                            0.0f,
+                            Math.min(
+                                    1.0f,
+                                    (openProgress * 1.35f)
+                                            - i * 0.055f
+                            )
+                    );
+
+            int animatedCardY =
+                    cardY +
+                            (int)
+                                    ((1.0f -
+                                            cardProgress) *
+                                            10);
 
             drawModuleCard(
                     context,
                     module,
                     cardX,
-                    cardY,
+                    animatedCardY,
                     cardW,
                     cardH,
                     mouseX,
-                    mouseY
+                    mouseY,
+                    cardProgress
             );
         }
     }
@@ -718,7 +777,8 @@ public class ModMenuScreen extends Screen {
             int w,
             int h,
             int mouseX,
-            int mouseY
+            int mouseY,
+            float animation
     ) {
 
         boolean hover =
@@ -730,50 +790,79 @@ public class ModMenuScreen extends Screen {
         boolean enabled =
                 module.isEnabled();
 
-        context.fill(
+        int background =
+                hover
+                        ? CARD_HOVER
+                        : CARD;
+
+        // Card glow
+        if (hover || enabled) {
+
+            drawRoundedRect(
+                    context,
+                    x - 2,
+                    y - 2,
+                    w + 4,
+                    h + 4,
+                    9,
+                    enabled
+                            ? 0x30008CFF
+                            : 0x18008CFF
+            );
+        }
+
+        // Main card
+        drawRoundedRect(
+                context,
                 x,
                 y,
-                x + w,
-                y + h,
-                hover
-                        ? 0xFF102A40
-                        : CARD
+                w,
+                h,
+                8,
+                background
         );
 
-        context.fill(
-                x,
+        // Top accent
+        drawRoundedRect(
+                context,
+                x + 1,
                 y,
-                x + w,
-                y + 1,
+                w - 2,
+                2,
+                1,
                 enabled
                         ? BLUE
-                        : 0xFF18334A
+                        : 0xFF16324A
         );
 
-        // Icon box
-        context.fill(
-                x + 13,
+        // Icon container
+        drawRoundedRect(
+                context,
+                x + 12,
                 y + 13,
-                x + 47,
-                y + 47,
-                0xFF102E49
+                38,
+                38,
+                8,
+                enabled
+                        ? 0xFF103452
+                        : 0xFF10263A
         );
 
-        drawIcon(
+        drawModuleIcon(
                 context,
                 module.name,
-                x + 30,
-                y + 30,
+                x + 31,
+                y + 32,
                 enabled
                         ? LIGHT_BLUE
                         : MUTED
         );
 
-        // Name
+        // Module name
         context.drawText(
                 textRenderer,
                 Text.literal(module.name),
-                x + 59,
+                x + 61,
                 y + 17,
                 WHITE,
                 true
@@ -784,242 +873,24 @@ public class ModMenuScreen extends Screen {
                 context,
                 module.description,
                 x + 13,
-                y + 62
+                y + 64
         );
 
         // Toggle
-        int toggleX =
-                x + w - 53;
-
-        int toggleY =
-                y + h - 35;
-
-        context.fill(
-                toggleX,
-                toggleY,
-                toggleX + 38,
-                toggleY + 20,
-                enabled
-                        ? BLUE
-                        : 0xFF20394D
-        );
-
-        if (enabled) {
-
-            context.fill(
-                    toggleX + 21,
-                    toggleY + 3,
-                    toggleX + 35,
-                    toggleY + 17,
-                    LIGHT_BLUE
-            );
-
-        } else {
-
-            context.fill(
-                    toggleX + 3,
-                    toggleY + 3,
-                    toggleX + 17,
-                    toggleY + 17,
-                    0xFF607589
-            );
-        }
-    }
-
-    // =========================================================
-    // HUD
-    // =========================================================
-
-    private void drawHUD(
-            DrawContext context,
-            int x,
-            int y,
-            int w
-    ) {
-
-        int startX =
-                x + 190;
-
-        int startY =
-                y + 100;
-
-        drawSimpleSetting(
+        drawToggle(
                 context,
-                startX,
-                startY,
-                "FPS Counter",
-                "Show current FPS.",
-                BlueLockOptimizerClient.CONFIG.fpsHudEnabled
-        );
-
-        drawSimpleSetting(
-                context,
-                startX,
-                startY + 70,
-                "Coordinates",
-                "Show XYZ coordinates.",
-                BlueLockOptimizerClient.CONFIG.coordinatesEnabled
-        );
-
-        drawSimpleSetting(
-                context,
-                startX,
-                startY + 140,
-                "CPS Counter",
-                "Show clicks per second.",
-                BlueLockOptimizerClient.CONFIG.cpsCounterEnabled
-        );
-
-        drawSimpleSetting(
-                context,
-                startX,
-                startY + 210,
-                "Armor HUD",
-                "Display armor status.",
-                BlueLockOptimizerClient.CONFIG.armorHudEnabled
+                x + w - 54,
+                y + h - 31,
+                enabled,
+                hover
         );
     }
 
     // =========================================================
-    // SETTINGS
+    // MODULE ICONS
     // =========================================================
 
-    private void drawSettings(
-            DrawContext context,
-            int x,
-            int y,
-            int w
-    ) {
-
-        int startX =
-                x + 190;
-
-        int startY =
-                y + 100;
-
-        drawSimpleSetting(
-                context,
-                startX,
-                startY,
-                "Performance Mode",
-                "Reduce visual effects.",
-                BlueLockOptimizerClient.CONFIG.performanceMode
-        );
-
-        drawSimpleSetting(
-                context,
-                startX,
-                startY + 70,
-                "Full Bright",
-                "Increase world brightness.",
-                BlueLockOptimizerClient.CONFIG.fullBrightEnabled
-        );
-
-        drawSimpleSetting(
-                context,
-                startX,
-                startY + 140,
-                "Toggle Sprint",
-                "Automatically sprint.",
-                BlueLockOptimizerClient.CONFIG.toggleSprintEnabled
-        );
-
-        drawSimpleSetting(
-                context,
-                startX,
-                startY + 210,
-                "Zoom",
-                "Zoom your Minecraft view.",
-                BlueLockOptimizerClient.CONFIG.zoomEnabled
-        );
-    }
-
-    // =========================================================
-    // SETTING BOX
-    // =========================================================
-
-    private void drawSimpleSetting(
-            DrawContext context,
-            int x,
-            int y,
-            String name,
-            String description,
-            boolean enabled
-    ) {
-
-        context.fill(
-                x,
-                y,
-                x + 500,
-                y + 55,
-                CARD
-        );
-
-        context.fill(
-                x,
-                y,
-                x + 3,
-                y + 55,
-                enabled
-                        ? BLUE
-                        : 0xFF18334A
-        );
-
-        context.drawText(
-                textRenderer,
-                Text.literal(name),
-                x + 18,
-                y + 12,
-                WHITE,
-                true
-        );
-
-        context.drawText(
-                textRenderer,
-                Text.literal(description),
-                x + 18,
-                y + 31,
-                MUTED,
-                false
-        );
-
-        context.fill(
-                x + 450,
-                y + 17,
-                x + 490,
-                y + 39,
-                enabled
-                        ? BLUE
-                        : 0xFF20394D
-        );
-
-        if (enabled) {
-
-            context.fill(
-                    x + 472,
-                    y + 20,
-                    x + 487,
-                    y + 36,
-                    LIGHT_BLUE
-            );
-
-        } else {
-
-            context.fill(
-                    x + 453,
-                    y + 20,
-                    x + 468,
-                    y + 36,
-                    0xFF607589
-            );
-        }
-    }
-
-    // =========================================================
-    // ICON
-    // =========================================================
-
-    private void drawIcon(
+    private void drawModuleIcon(
             DrawContext context,
             String name,
             int x,
@@ -1038,17 +909,6 @@ public class ModMenuScreen extends Screen {
                     true
             );
 
-        } else if (name.equals("Zoom")) {
-
-            context.drawText(
-                    textRenderer,
-                    Text.literal("+"),
-                    x - 5,
-                    y - 7,
-                    color,
-                    true
-            );
-
         } else if (name.equals("CPS Counter")) {
 
             context.drawText(
@@ -1060,64 +920,420 @@ public class ModMenuScreen extends Screen {
                     true
             );
 
-        } else {
+        } else if (name.equals("Zoom")) {
 
             context.drawText(
                     textRenderer,
-                    Text.literal("◆"),
-                    x - 5,
+                    Text.literal("+"),
+                    x - 4,
+                    y - 8,
+                    color,
+                    true
+            );
+
+        } else if (name.equals("Keystrokes")) {
+
+            context.drawText(
+                    textRenderer,
+                    Text.literal("W"),
+                    x - 4,
                     y - 7,
                     color,
                     true
+            );
+
+        } else {
+
+            context.fill(
+                    x - 5,
+                    y - 5,
+                    x + 6,
+                    y + 6,
+                    color
+            );
+
+            context.fill(
+                    x - 2,
+                    y - 2,
+                    x + 3,
+                    y + 3,
+                    0xFF0B1B2B
             );
         }
     }
 
     // =========================================================
-    // SEARCH
+    // TOGGLE
     // =========================================================
 
-    private void drawSearchIcon(
+    private void drawToggle(
             DrawContext context,
             int x,
-            int y
+            int y,
+            boolean enabled,
+            boolean hover
     ) {
 
-        context.fill(
+        int track =
+                enabled
+                        ? BLUE
+                        : hover
+                                ? 0xFF294A62
+                                : 0xFF20384B;
+
+        drawRoundedRect(
+                context,
                 x,
                 y,
-                x + 14,
-                y + 3,
-                LIGHT_BLUE
+                42,
+                22,
+                11,
+                track
         );
 
-        context.fill(
-                x - 2,
+        int knobX =
+                enabled
+                        ? x + 23
+                        : x + 3;
+
+        drawRoundedRect(
+                context,
+                knobX,
                 y + 3,
-                x + 16,
-                y + 14,
-                LIGHT_BLUE
+                16,
+                16,
+                8,
+                enabled
+                        ? WHITE
+                        : 0xFF71879A
         );
 
-        context.fill(
-                x + 2,
+        if (enabled) {
+
+            drawRoundedRect(
+                    context,
+                    x + 25,
+                    y + 5,
+                    4,
+                    4,
+                    2,
+                    LIGHT_BLUE
+            );
+        }
+    }
+
+    // =========================================================
+    // HUD
+    // =========================================================
+
+    private void drawHUD(
+            DrawContext context,
+            int x,
+            int y,
+            int mouseX,
+            int mouseY
+    ) {
+
+        int startX =
+                x + 194;
+
+        int startY =
+                y + 98;
+
+        drawSettingCard(
+                context,
+                startX,
+                startY,
+                "FPS Counter",
+                "Show current FPS.",
+                BlueLockOptimizerClient.CONFIG.fpsHudEnabled,
+                mouseX,
+                mouseY
+        );
+
+        drawSettingCard(
+                context,
+                startX,
+                startY + 72,
+                "Coordinates",
+                "Show XYZ coordinates.",
+                BlueLockOptimizerClient.CONFIG.coordinatesEnabled,
+                mouseX,
+                mouseY
+        );
+
+        drawSettingCard(
+                context,
+                startX,
+                startY + 144,
+                "CPS Counter",
+                "Show clicks per second.",
+                BlueLockOptimizerClient.CONFIG.cpsCounterEnabled,
+                mouseX,
+                mouseY
+        );
+
+        drawSettingCard(
+                context,
+                startX,
+                startY + 216,
+                "Armor HUD",
+                "Display armor status.",
+                BlueLockOptimizerClient.CONFIG.armorHudEnabled,
+                mouseX,
+                mouseY
+        );
+    }
+
+    // =========================================================
+    // SETTINGS
+    // =========================================================
+
+    private void drawSettings(
+            DrawContext context,
+            int x,
+            int y,
+            int mouseX,
+            int mouseY
+    ) {
+
+        int startX =
+                x + 194;
+
+        int startY =
+                y + 98;
+
+        drawSettingCard(
+                context,
+                startX,
+                startY,
+                "Performance Mode",
+                "Reduce unnecessary visual effects.",
+                BlueLockOptimizerClient.CONFIG.performanceMode,
+                mouseX,
+                mouseY
+        );
+
+        drawSettingCard(
+                context,
+                startX,
+                startY + 72,
+                "Full Bright",
+                "Increase world brightness.",
+                BlueLockOptimizerClient.CONFIG.fullBrightEnabled,
+                mouseX,
+                mouseY
+        );
+
+        drawSettingCard(
+                context,
+                startX,
+                startY + 144,
+                "Toggle Sprint",
+                "Automatically sprint while moving.",
+                BlueLockOptimizerClient.CONFIG.toggleSprintEnabled,
+                mouseX,
+                mouseY
+        );
+
+        drawSettingCard(
+                context,
+                startX,
+                startY + 216,
+                "Zoom",
+                "Zoom your Minecraft view.",
+                BlueLockOptimizerClient.CONFIG.zoomEnabled,
+                mouseX,
+                mouseY
+        );
+    }
+
+    // =========================================================
+    // SETTING CARD
+    // =========================================================
+
+    private void drawSettingCard(
+            DrawContext context,
+            int x,
+            int y,
+            String name,
+            String description,
+            boolean enabled,
+            int mouseX,
+            int mouseY
+    ) {
+
+        boolean hover =
+                mouseX >= x &&
+                        mouseX <= x + 500 &&
+                        mouseY >= y &&
+                        mouseY <= y + 55;
+
+        drawRoundedRect(
+                context,
+                x,
+                y,
+                500,
+                55,
+                8,
+                hover
+                        ? CARD_HOVER
+                        : CARD
+        );
+
+        drawRoundedRect(
+                context,
+                x,
                 y + 5,
-                x + 12,
-                y + 12,
-                BACKGROUND
+                3,
+                45,
+                2,
+                enabled
+                        ? BLUE
+                        : 0xFF16324A
+        );
+
+        context.drawText(
+                textRenderer,
+                Text.literal(name),
+                x + 18,
+                y + 11,
+                WHITE,
+                true
+        );
+
+        context.drawText(
+                textRenderer,
+                Text.literal(description),
+                x + 18,
+                y + 31,
+                MUTED,
+                false
+        );
+
+        drawToggle(
+                context,
+                x + 445,
+                y + 16,
+                enabled,
+                hover
+        );
+    }
+
+    // =========================================================
+    // SEARCH BUTTON
+    // =========================================================
+
+    private void drawSearchButton(
+            DrawContext context,
+            int x,
+            int y,
+            int mouseX,
+            int mouseY
+    ) {
+
+        boolean hover =
+                mouseX >= x - 10 &&
+                        mouseX <= x + 25 &&
+                        mouseY >= y - 10 &&
+                        mouseY <= y + 25;
+
+        drawRoundedRect(
+                context,
+                x - 8,
+                y - 8,
+                30,
+                30,
+                8,
+                hover
+                        ? 0xFF102C45
+                        : 0xFF0B1D2E
+        );
+
+        // Magnifying glass
+        context.fill(
+                x - 1,
+                y - 1,
+                x + 10,
+                y + 2,
+                LIGHT_BLUE
         );
 
         context.fill(
-                x + 13,
-                y + 13,
-                x + 19,
-                y + 19,
+                x - 1,
+                y - 1,
+                x + 2,
+                y + 10,
+                LIGHT_BLUE
+        );
+
+        context.fill(
+                x + 8,
+                y - 1,
+                x + 11,
+                y + 10,
+                LIGHT_BLUE
+        );
+
+        context.fill(
+                x + 1,
+                y + 7,
+                x + 9,
+                y + 10,
+                LIGHT_BLUE
+        );
+
+        context.fill(
+                x + 9,
+                y + 9,
+                x + 15,
+                y + 12,
                 LIGHT_BLUE
         );
     }
 
     // =========================================================
-    // DESCRIPTION
+    // GEAR
+    // =========================================================
+
+    private void drawGearButton(
+            DrawContext context,
+            int x,
+            int y,
+            int mouseX,
+            int mouseY
+    ) {
+
+        boolean hover =
+                mouseX >= x - 10 &&
+                        mouseX <= x + 25 &&
+                        mouseY >= y - 10 &&
+                        mouseY <= y + 25;
+
+        drawRoundedRect(
+                context,
+                x - 8,
+                y - 8,
+                30,
+                30,
+                8,
+                hover
+                        ? 0xFF102C45
+                        : 0xFF0B1D2E
+        );
+
+        context.drawText(
+                textRenderer,
+                Text.literal("⚙"),
+                x - 1,
+                y - 3,
+                CYAN,
+                true
+        );
+    }
+
+    // =========================================================
+    // DESCRIPTION WRAPPING
     // =========================================================
 
     private void drawDescription(
@@ -1153,7 +1369,7 @@ public class ModMenuScreen extends Screen {
                 );
 
                 line = word;
-                lineY += 12;
+                lineY += 11;
 
             } else {
 
@@ -1172,6 +1388,109 @@ public class ModMenuScreen extends Screen {
                     false
             );
         }
+    }
+
+    // =========================================================
+    // ROUNDED RECTANGLE
+    // =========================================================
+
+    private void drawRoundedRect(
+            DrawContext context,
+            int x,
+            int y,
+            int w,
+            int h,
+            int radius,
+            int color
+    ) {
+
+        if (w <= radius * 2 ||
+                h <= radius * 2) {
+
+            context.fill(
+                    x,
+                    y,
+                    x + w,
+                    y + h,
+                    color
+            );
+
+            return;
+        }
+
+        // Center
+        context.fill(
+                x + radius,
+                y,
+                x + w - radius,
+                y + h,
+                color
+        );
+
+        context.fill(
+                x,
+                y + radius,
+                x + w,
+                y + h - radius,
+                color
+        );
+
+        // Corners
+        context.fill(
+                x + 2,
+                y + 2,
+                x + radius,
+                y + radius,
+                color
+        );
+
+        context.fill(
+                x + w - radius,
+                y + 2,
+                x + w - 2,
+                y + radius,
+                color
+        );
+
+        context.fill(
+                x + 2,
+                y + h - radius,
+                x + radius,
+                y + h - 2,
+                color
+        );
+
+        context.fill(
+                x + w - radius,
+                y + h - radius,
+                x + w - 2,
+                y + h - 2,
+                color
+        );
+    }
+
+    // =========================================================
+    // GLOW
+    // =========================================================
+
+    private void drawGlow(
+            DrawContext context,
+            int x,
+            int y,
+            int w,
+            int h,
+            int color
+    ) {
+
+        drawRoundedRect(
+                context,
+                x,
+                y,
+                w,
+                h,
+                14,
+                color
+        );
     }
 
     // =========================================================
@@ -1198,30 +1517,30 @@ public class ModMenuScreen extends Screen {
         // -----------------------------------------------------
 
         int sidebarX =
-                panelX + 20;
+                panelX + 18;
 
         int sidebarY =
-                panelY + 95;
+                panelY + 96;
 
         if (mouseX >= sidebarX &&
-                mouseX <= sidebarX + 150) {
+                mouseX <= sidebarX + 145) {
 
             if (mouseY >= sidebarY &&
-                    mouseY <= sidebarY + 40) {
+                    mouseY <= sidebarY + 38) {
 
                 selectedTab = 0;
                 return true;
             }
 
-            if (mouseY >= sidebarY + 55 &&
-                    mouseY <= sidebarY + 95) {
+            if (mouseY >= sidebarY + 54 &&
+                    mouseY <= sidebarY + 92) {
 
                 selectedTab = 1;
                 return true;
             }
 
-            if (mouseY >= sidebarY + 110 &&
-                    mouseY <= sidebarY + 150) {
+            if (mouseY >= sidebarY + 108 &&
+                    mouseY <= sidebarY + 146) {
 
                 selectedTab = 2;
                 return true;
@@ -1235,16 +1554,13 @@ public class ModMenuScreen extends Screen {
         if (selectedTab == 0) {
 
             int startX =
-                    panelX + 190;
+                    panelX + 194;
 
             int startY =
-                    panelY + 95;
+                    panelY + 96;
 
-            int cardW =
-                    215;
-
-            int cardH =
-                    125;
+            int cardW = 215;
+            int cardH = 116;
 
             for (int i = 0;
                  i < modules.size();
@@ -1267,22 +1583,22 @@ public class ModMenuScreen extends Screen {
                 int cardY =
                         startY +
                                 row *
-                                        (cardH + 12);
+                                        (cardH + 10);
 
                 int toggleX =
                         cardX +
                                 cardW -
-                                53;
+                                54;
 
                 int toggleY =
                         cardY +
                                 cardH -
-                                35;
+                                31;
 
                 if (mouseX >= toggleX &&
-                        mouseX <= toggleX + 38 &&
+                        mouseX <= toggleX + 42 &&
                         mouseY >= toggleY &&
-                        mouseY <= toggleY + 20) {
+                        mouseY <= toggleY + 22) {
 
                     module.toggle();
 
@@ -1309,8 +1625,7 @@ public class ModMenuScreen extends Screen {
             int modifiers
     ) {
 
-        if (keyCode ==
-                GLFW.GLFW_KEY_ESCAPE) {
+        if (keyCode == 256) {
 
             close();
 
@@ -1325,7 +1640,7 @@ public class ModMenuScreen extends Screen {
     }
 
     // =========================================================
-    // GAME DOES NOT PAUSE
+    // NO GAME PAUSE
     // =========================================================
 
     @Override
