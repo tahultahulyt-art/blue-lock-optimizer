@@ -123,7 +123,7 @@ int alpha = (int) (184 * openAnimation);
                 panelY - 5,
                 panelX + panelW + 5,
                 panelY + panelH + 5,
-                0x22008CFF
+                0x44008CFF
         );
 
         // =====================================================
